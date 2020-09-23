@@ -15,6 +15,7 @@ namespace Leistrack
     class Program
     {
         const string VERSION = "V1.0";
+        const string APPNAME = "Leistrack";
         static ProgramDataMeta metaData;
         static ProgramDataForYear programDataForYear;
         static LeistungDate currentDate;
@@ -28,15 +29,14 @@ namespace Leistrack
         static void RunLeistrack()
         {
             OnStartup();
-            ProgramLoop();
-            
+            ProgramLoop();            
             OnShutdown();
         }
 
         static void WelcomeUser()
         {
             ClearConsole();
-            Console.Write("Welcome to "); WriteColored("Leistrack ", ConsoleColor.Yellow); WriteColored(VERSION, ConsoleColor.Green); Console.WriteLine("!");
+            Console.Write("Welcome to "); WriteColored($"{APPNAME} ", ConsoleColor.Yellow); WriteColored(VERSION, ConsoleColor.Green); Console.WriteLine("!");
             Console.WriteLine($"Current date set to {LeistungDateToRealDateString(currentDate)}");
             Console.WriteLine("You can start by typing \"help\"");
         }
@@ -64,9 +64,7 @@ namespace Leistrack
             int year = 0;
             int month = 0;
             int day = 0;
-
             string[] dateElements = date.Split('/', StringSplitOptions.RemoveEmptyEntries);
-
             if (dateElements.Length != 3 ||
                 !int.TryParse(dateElements[0], out day) ||
                 !int.TryParse(dateElements[1], out month) ||
@@ -76,7 +74,6 @@ namespace Leistrack
             }
 
             DateTime validDateTest;
-
             try
             {
                 validDateTest = new DateTime(year, month, day);
@@ -85,7 +82,6 @@ namespace Leistrack
             {
                 return (false, DateTime.Now);
             }
-
             return (true, validDateTest);
         }
 
@@ -146,9 +142,6 @@ namespace Leistrack
             {
                 case "info":
                     ReadInfoCommand(commandElements);
-                    return;
-                case "clear":
-                    ClearConsole();
                     return;
                 case "setdate":
                     ReadSetdateCommand(commandElements);
@@ -252,11 +245,11 @@ namespace Leistrack
         {
             if (showDate)
             {
-                WriteColoredLine($"Leistrack {LeistungDateToRealDateString(currentDate)}", ConsoleColor.Yellow);
+                WriteColoredLine($"{APPNAME} {LeistungDateToRealDateString(currentDate)}", ConsoleColor.Yellow);
             }
             else
             {
-                WriteColoredLine($"Leistrack", ConsoleColor.Yellow);
+                WriteColoredLine($"{APPNAME}", ConsoleColor.Yellow);
             }
             Console.WriteLine();
         }
