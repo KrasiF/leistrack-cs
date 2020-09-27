@@ -149,21 +149,43 @@ namespace Leistrack
                 case "period":
                     ReadPeriodCommand(commandElements);
                     return;
+                case "subjects":
+                    PrintSubjects();
+                    return;
+                case "help":
+                    PrintHelp();
+                    return;
             }
+        }
+
+        static void PrintSubjects()
+        {
+            Console.WriteLine("All existing subjects for the current grade are: " + string.Join(", ",programDataForYear.subjects));
+        }
+
+        static void PrintHelp()
+        {
+            Console.WriteLine("1)\"info\" is used to show the time spent on subjects for the current day.");
+            Console.WriteLine("2)\"setdate\" is used to change the current day (useful for logging progress which you've forgotten).");
+            Console.WriteLine("3)\"period\" is used to show the time spent on subjects for a given period.");
+            Console.WriteLine("4)\"subjects\" is used to show all subjects for a given grade.");
+            Console.WriteLine("5)\"(subject)\" is used to track your time spent on a subject.");
+            Console.WriteLine("For a more detailed description on any given command and its usage, type the command.");
         }
 
         static void ReadPeriodCommand(string[] commandElements)
         {
             if (commandElements.Length > 1)
             {
-                switch (commandElements[1])
-                {
-                    case "week":
-                        return;
-                }
+                //todo
+                //switch (commandElements[1])
+                //{
+                //    case "week":
+                //        return;
+                //}
 
                 if (commandElements.Length == 3)
-                {
+                {                    
                     int periodStartDaysSinceSchoolStartedCheck = DateStringToDaysSinceSchoolStarted(commandElements[1]);
                     int periodEndDaysSinceSchoolStartedCheck = DateStringToDaysSinceSchoolStarted(commandElements[2]);
 
@@ -180,8 +202,9 @@ namespace Leistrack
             }
             Console.WriteLine("You can check your total time spent on all subjects for a given period using: \"period (start date) (end date)\"");
             Console.WriteLine($"for example type \"period {LeistungDateToRealDateString(programDataForYear.leistungDates[0])} {LeistungDateToRealDateString(programDataForYear.leistungDates[GetDaysFromStartToNow()])}\"");
-
         }
+
+        
 
         static void PrintInfoForGivenPeriod(int startInDaysSinceSchoolStarted, int endInDaysSinceSchoolStarted)
         {
