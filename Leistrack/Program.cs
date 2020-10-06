@@ -1,6 +1,7 @@
 ﻿using Microsoft.Office.Interop.Excel;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -45,6 +46,22 @@ namespace Leistrack
         {
             DateTime today = programDataForYear.startDate + TimeSpan.FromDays(date.daysSinceFirstSchoolDay);
             return $"{today.Day}/{today.Month}/{today.Year}";
+        }
+
+        static int WeekStartToDaysSinceSchoolStarted(int week)
+        {
+            if (week == 0)
+            {
+                return 0;
+            }
+            int daysSinceSchoolStarted = week * 7;
+            int schoolStartWeekday = (int)programDataForYear.startDate.DayOfWeek;
+            return daysSinceSchoolStarted - schoolStartWeekday+1;
+        }
+
+        static int DaysSinceSchoolStartedToWeek(int daysSinceSchoolStarted)
+        {
+            return (daysSinceSchoolStarted + (int)programDataForYear.startDate.DayOfWeek) / 7;
         }
 
         static int DateStringToDaysSinceSchoolStarted(string date)
@@ -117,7 +134,7 @@ namespace Leistrack
                 Console.WriteLine("Save all changes?");
                 input = Console.ReadLine();
             }
-            if(input == "yes")
+            if (input == "yes")
             {
                 SaveMetaData();
             }
@@ -160,7 +177,7 @@ namespace Leistrack
 
         static void PrintSubjects()
         {
-            Console.WriteLine("All existing subjects for the current grade are: " + string.Join(", ",programDataForYear.subjects));
+            Console.WriteLine("All existing subjects for the current grade are: " + string.Join(", ", programDataForYear.subjects));
         }
 
         static void PrintHelp()
@@ -177,34 +194,83 @@ namespace Leistrack
         {
             if (commandElements.Length > 1)
             {
-                //todo
-                //switch (commandElements[1])
-                //{
-                //    case "week":
-                //        return;
-                //}
 
-                if (commandElements.Length == 3)
-                {                    
-                    int periodStartDaysSinceSchoolStartedCheck = DateStringToDaysSinceSchoolStarted(commandElements[1]);
-                    int periodEndDaysSinceSchoolStartedCheck = DateStringToDaysSinceSchoolStarted(commandElements[2]);
-
-                    if (periodEndDaysSinceSchoolStartedCheck != -1 &&
-                        periodStartDaysSinceSchoolStartedCheck != -1 &&
-                        periodEndDaysSinceSchoolStartedCheck - periodStartDaysSinceSchoolStartedCheck > 0)
-                    {
-                        PrintInfoForGivenPeriod(periodStartDaysSinceSchoolStartedCheck, periodEndDaysSinceSchoolStartedCheck);
+                switch (commandElements[1])
+                {
+                    case "week":
+                        ReadInfoForGivenWeekCommand(commandElements);
                         return;
-                    }
+                    default:
+                        ReadInfoForGivenPeriodCommand(commandElements);
+                        return;
                 }
-                Console.WriteLine("Invalid input! Make sure the dates are correct and are formated like this: dd/mm/yyyy");
-                return;
+
+
             }
             Console.WriteLine("You can check your total time spent on all subjects for a given period using: \"period (start date) (end date)\"");
             Console.WriteLine($"for example type \"period {LeistungDateToRealDateString(programDataForYear.leistungDates[0])} {LeistungDateToRealDateString(programDataForYear.leistungDates[GetDaysFromStartToNow()])}\"");
+            Console.WriteLine("You can check your total time spent on all subjects for a given week using: \"period (week since school start)\" 0 is the first week.");
+
         }
 
-        
+        static void ReadInfoForGivenWeekCommand(string[] commandElements)
+        {
+            if (commandElements.Length == 3)
+            {
+                switch (commandElements[2])
+                {
+                    case "this":
+                        PrintInfoForCurrentWeek();
+                        return;
+                    default:
+                        int week = 0;
+                        if(!int.TryParse(commandElements[2], out week) || week < 0)
+                        {
+                            break;
+                        }
+                        PrintInfoForGivenWeek(week);
+                        return;
+                }
+                
+            }
+            Console.WriteLine("Invalid input! Make sure the week is a whole non-negative number or use \"this\" for the current week.");
+        }
+
+        static void ReadInfoForGivenPeriodCommand(string[] commandElements)
+        {
+            if (commandElements.Length == 3)
+            {
+                int periodStartDaysSinceSchoolStartedCheck = DateStringToDaysSinceSchoolStarted(commandElements[1]);
+                int periodEndDaysSinceSchoolStartedCheck = DateStringToDaysSinceSchoolStarted(commandElements[2]);
+
+                if (periodEndDaysSinceSchoolStartedCheck != -1 &&
+                    periodStartDaysSinceSchoolStartedCheck != -1 &&
+                    periodEndDaysSinceSchoolStartedCheck - periodStartDaysSinceSchoolStartedCheck > 0)
+                {
+                    PrintInfoForGivenPeriod(periodStartDaysSinceSchoolStartedCheck, periodEndDaysSinceSchoolStartedCheck);
+                    return;
+                }
+            }
+            Console.WriteLine("Invalid input! Make sure the dates are correct and are formated like this: dd/mm/yyyy");
+            return;
+        }
+
+        static void PrintInfoForGivenWeek(int week)
+        {
+            int weekStart = WeekStartToDaysSinceSchoolStarted(week);
+            int weekEnd = WeekStartToDaysSinceSchoolStarted(week + 1) - 1;
+            PrintInfoForGivenPeriod(weekStart, weekEnd);
+            return;
+        }
+
+        static void PrintInfoForCurrentWeek()
+        {
+            int week = DaysSinceSchoolStartedToWeek(currentDate.daysSinceFirstSchoolDay);
+            int weekStart = WeekStartToDaysSinceSchoolStarted(week);
+            int weekEnd = WeekStartToDaysSinceSchoolStarted(week + 1) - 1;
+            PrintInfoForGivenPeriod(weekStart, weekEnd);
+            return;
+        }
 
         static void PrintInfoForGivenPeriod(int startInDaysSinceSchoolStarted, int endInDaysSinceSchoolStarted)
         {
@@ -216,7 +282,7 @@ namespace Leistrack
                 CreateEmptyDaysTo(endInDaysSinceSchoolStarted + 1);
             }
 
-            for (int i = startInDaysSinceSchoolStarted; i < endInDaysSinceSchoolStarted+1; i++)
+            for (int i = startInDaysSinceSchoolStarted; i < endInDaysSinceSchoolStarted + 1; i++)
             {
                 for (int j = 0; j < programDataForYear.subjects.Count; j++)
                 {
