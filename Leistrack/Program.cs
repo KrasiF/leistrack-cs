@@ -110,7 +110,10 @@ namespace Leistrack
 
             while (input != "quit")
             {
-                ReadCommand(input);
+                if (!ReadCommand(input))
+                {
+                    Console.WriteLine("Invalid input. Type \"help\" for available commands.");
+                }
                 Console.WriteLine();
                 input = Console.ReadLine();
                 ClearConsole();
@@ -140,38 +143,40 @@ namespace Leistrack
             }
         }
 
-        static void ReadCommand(string input)
+        static bool ReadCommand(string input)
         {
             string[] commandElements = input.Split(" ", StringSplitOptions.RemoveEmptyEntries);
 
             if (commandElements.Length == 0)
             {
-                return;
+                return false;
             }
 
             if (programDataForYear.subjects.Contains(commandElements[0]))
             {
                 ReadSubjectCommand(commandElements);
-                return;
+                return true;
             }
 
             switch (commandElements[0])
             {
                 case "info":
                     ReadInfoCommand(commandElements);
-                    return;
+                    return true;
                 case "setdate":
                     ReadSetdateCommand(commandElements);
-                    return;
+                    return true;
                 case "period":
                     ReadPeriodCommand(commandElements);
-                    return;
+                    return true;
                 case "subjects":
                     PrintSubjects();
-                    return;
+                    return true;
                 case "help":
                     PrintHelp();
-                    return;
+                    return true;
+                default:
+                    return false;
             }
         }
 
