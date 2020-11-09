@@ -14,3 +14,6 @@
  3) info - logs the progress for the current day.
  4) period - logs the progress over a period.
  5) quit - **whether to save all changes** and closes the app 
+
+![preview1](images/preview1.png)
+![preview1](images/preview2.png)
