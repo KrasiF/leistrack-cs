@@ -21,6 +21,8 @@ namespace Leistrack
         static ProgramDataForYear programDataForYear;
         static LeistungDate currentDate;
         static string dataPath = "";
+        static bool hasChanged = false;
+
 
         static void Main(string[] args)
         {
@@ -122,7 +124,10 @@ namespace Leistrack
 
         static void OnShutdown()
         {
-            SaveDialog();
+            if (hasChanged)
+            {
+                SaveDialog();
+            }
             Console.WriteLine("Press any key to close the app.");
             Console.ReadKey();
         }
@@ -366,18 +371,31 @@ namespace Leistrack
 
         static void ReadSubjectCommand(string[] commandElements)
         {
-            if (commandElements.Length > 1)
+            if(commandElements.Length == 1)
             {
-                switch (commandElements[1])
-                {
-                    case "time":
-                        ReadSubjectAnyTimeCommand(commandElements, false);
-                        return;
-                    case "realtime":
-                        ReadSubjectAnyTimeCommand(commandElements, true);
-                        return;
-                }
+                PrintSubjectCommandInfo(commandElements);
+                return;
             }
+            bool isInputValid = false;
+
+            switch (commandElements[1])
+            {
+                case "time":
+                    isInputValid = ReadSubjectTimeCommand(commandElements);
+                    break;
+                case "realtime":
+                    isInputValid = ReadSubjectRealTimeCommand(commandElements);
+                    break;
+            }
+
+            if (!isInputValid)
+            {
+                Console.WriteLine($"Invalid input! Type \"{commandElements[0]}\" to see all subject commands.");
+            }
+        }
+
+        static void PrintSubjectCommandInfo(string[] commandElements)
+        {
             Console.WriteLine("You can:\n" +
                              $" 1) check your time spent on the subject by typing \"{commandElements[0]} time\"\n" +
                              $" 2) check your real time spent on the subject by typing \"{commandElements[0]} realtime\"\n" +
@@ -386,62 +404,117 @@ namespace Leistrack
                              $" 4) change your real time spent on the subject by typing \"{commandElements[0]} realtime (minutes)\"\n" +
                              $" 5) set your time spent on the subject by typing \"{commandElements[0]} time set (minutes)\" to set the time spent on a subject to a fixed amount\n" +
                              $" 6) set your real time spent on the subject by typing \"{commandElements[0]} realtime set (minutes)\"");
-        }
+        }        
 
-        static void ReadSubjectAnyTimeCommand(string[] commandElements, bool isRealTime)
+        static bool ReadSubjectRealTimeCommand(string[] commandElements)
         {
             if (commandElements.Length > 2)
             {
-                switch (commandElements[2])
+                if (commandElements[2] == "set")
                 {
-                    case "set":
-                        int toMinutes = 0;
-                        if (commandElements.Length > 3 && int.TryParse(commandElements[3], out toMinutes))
-                        {
-                            if (isRealTime)
-                            {
-                                currentDate[commandElements[0]] = (currentDate[commandElements[0]].minutes, toMinutes);
-                                Console.WriteLine($"Real time in {commandElements[0]} set to: {toMinutes} minutes.");
-                            }
-                            else
-                            {
-                                currentDate[commandElements[0]] = (toMinutes, currentDate[commandElements[0]].realMinutes);
-                                Console.WriteLine($"Time in {commandElements[0]} set to: {toMinutes} minutes.");
-                            }
-                            break;
-                        }
-                        Console.WriteLine($"Invalid input! Type \"{commandElements[0]}\" to see all commands.");
-                        break;
-                    default:
-                        int minutesChanged = 0;
-                        if (commandElements.Length > 2 && int.TryParse(commandElements[2], out minutesChanged))
-                        {
-                            if (isRealTime)
-                            {
-                                currentDate[commandElements[0]] = (currentDate[commandElements[0]].minutes, currentDate[commandElements[0]].realMinutes + minutesChanged);
-                                Console.WriteLine($"Real time in {commandElements[0]} changed by {(minutesChanged > 0 ? "+" : "")}{minutesChanged} minutes.");
-                            }
-                            else
-                            {
-                                currentDate[commandElements[0]] = (currentDate[commandElements[0]].minutes + minutesChanged, currentDate[commandElements[0]].realMinutes);
-                                Console.WriteLine($"Time in {commandElements[0]} changed by {(minutesChanged > 0 ? "+" : "")}{minutesChanged} minutes.");
-                            }
-                            break;
-                        }
-                        Console.WriteLine($"Invalid input! Type \"{commandElements[0]}\" to see all subject commands.");
-                        break;
+                    return ReadSetSubjectRealTimeCommand(commandElements);
+                }
+                else
+                {
+                    return ReadChangeSubjectRealTimeCommand(commandElements);
                 }
             }
             else
             {
-                if (isRealTime)
+                Console.WriteLine($"Real time spent on {commandElements[0]}: {ConvertMinutesToHoursString(currentDate[commandElements[0]].realMinutes)}.");
+                return true;
+            }
+
+        }
+
+        static bool ReadSetSubjectRealTimeCommand(string[] commandElements)
+        {
+            int toMinutes = 0;
+            bool isInputValid = int.TryParse(commandElements[3], out toMinutes);
+            if (!isInputValid)
+            {
+                return false;
+            }
+            else
+            {
+                currentDate[commandElements[0]] = (currentDate[commandElements[0]].minutes, toMinutes);
+                Console.WriteLine($"Real time in {commandElements[0]} set to: {toMinutes} minutes.");
+                hasChanged = true;
+                return true;
+            }
+
+        }
+
+        static bool ReadChangeSubjectRealTimeCommand(string[] commandElements)
+        {
+            int byMinutes = 0;
+            bool isInputValid = int.TryParse(commandElements[2], out byMinutes);
+            if (!isInputValid)
+            {
+                return false;
+            }
+            else
+            {
+                currentDate[commandElements[0]] = (currentDate[commandElements[0]].minutes, currentDate[commandElements[0]].realMinutes + byMinutes);
+                Console.WriteLine($"Real time in {commandElements[0]} changed by {(byMinutes > 0 ? "+" : "")}{byMinutes} minutes.");
+                hasChanged = true;
+                return true;
+            }
+        }
+
+        static bool ReadSubjectTimeCommand(string[] commandElements)
+        {
+            if(commandElements.Length > 2)
+            {
+                if(commandElements[2] == "set")
                 {
-                    Console.WriteLine($"Real time spent on {commandElements[0]}: {ConvertMinutesToHoursString(currentDate[commandElements[0]].realMinutes)}.");
+                    return ReadSetSubjectTimeCommand(commandElements);
                 }
                 else
                 {
-                    Console.WriteLine($"Time spent on {commandElements[0]}: {ConvertMinutesToHoursString(currentDate[commandElements[0]].minutes)}.");
+                    return ReadChangeSubjectTimeCommand(commandElements);
                 }
+            }
+            else
+            {
+                Console.WriteLine($"Time spent on {commandElements[0]}: {ConvertMinutesToHoursString(currentDate[commandElements[0]].minutes)}.");
+                return true;
+            }
+
+        }
+
+        static bool ReadSetSubjectTimeCommand(string[] commandElements)
+        {
+            int toMinutes = 0;
+            bool isInputValid = int.TryParse(commandElements[3], out toMinutes);
+            if (!isInputValid)
+            {
+                return false;
+            }
+            else
+            {
+                currentDate[commandElements[0]] = (toMinutes, currentDate[commandElements[0]].realMinutes);
+                Console.WriteLine($"Time in {commandElements[0]} set to: {toMinutes} minutes.");
+                hasChanged = true;
+                return true;
+            }
+
+        }
+
+        static bool ReadChangeSubjectTimeCommand(string[] commandElements)
+        {
+            int byMinutes = 0;
+            bool isInputValid = int.TryParse(commandElements[2], out byMinutes);
+            if (!isInputValid)
+            {
+                return false;
+            }
+            else
+            {
+                currentDate[commandElements[0]] = (currentDate[commandElements[0]].minutes + byMinutes, currentDate[commandElements[0]].realMinutes);
+                Console.WriteLine($"Time in {commandElements[0]} changed by {(byMinutes > 0 ? "+" : "")}{byMinutes} minutes.");
+                hasChanged = true;
+                return true;
             }
         }
 
